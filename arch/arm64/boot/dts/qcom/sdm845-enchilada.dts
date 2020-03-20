@@ -18,12 +18,43 @@
 	qcom,board-id = <8 0 17819 22>;
 
 	aliases {
-		serial0 = &uart9;
-	};
+        display0 = &framebuffer0;
+    };
 
-	chosen {
-		stdout-path = "serial0:115200n8";
-	};
+    chosen {
+        #address-cells = <2>;
+        #size-cells = <2>;
+        ranges;
+
+        stdout-path = "display0";
+
+        /*
+         * hack: Use framebuffer setup by the bootloader for simplefb.
+         * the address is taken from the bootloader config (strings xbl.img | grep "Display Reserved")
+         */
+        framebuffer0: framebuffer@9d400000 {
+            compatible = "simple-framebuffer";
+            reg = <0 0x9d400000 0 (1080 * 2280 * 4)>;
+            width = <1080>;
+            height = <2280>;
+            stride = <(1080 * 4)>;
+            format = "a8r8g8b8";
+            status = "okay";
+        };
+    };
+
+    reserved-memory {
+        #address-cells = <2>;
+        #size-cells = <2>;
+        ranges;
+
+        // hack: Bootloader framebuffer memory region
+        fb_mem: memory@a1a10000 {
+            compatible = "removed-dma-pool";
+            no-map;
+            reg = <0 0x9d400000 0 (1080 * 1920 * 4)>;
+        };
+    };
 
 	vph_pwr: vph-pwr-regulator {
 		compatible = "regulator-fixed";
@@ -369,27 +400,6 @@
 	};
 };
 
-&i2c10 {
-	status = "okay";
-	clock-frequency = <400000>;
-};
-
-&qupv3_id_1 {
-	status = "okay";
-};
-
-&sdhc_2 {
-	status = "okay";
-
-	pinctrl-names = "default";
-	pinctrl-0 = <&sdc2_clk &sdc2_cmd &sdc2_data &sd_card_det_n>;
-
-	vmmc-supply = <&vreg_l21a_2p95>;
-	vqmmc-supply = <&vddpx_2>;
-
-	cd-gpios = <&tlmm 126 GPIO_ACTIVE_LOW>;
-};
-
 &uart9 {
 	status = "okay";
 };
@@ -439,38 +449,6 @@
 	vdda-pll-supply = <&vdda_usb1_ss_core>;
 };
 
-&usb_2 {
-	status = "okay";
-};
-
-&usb_2_dwc3 {
-	/*
-	 * Though the USB block on SDM845 can support host, there's no vbus
-	 * signal for this port on MTP.  Thus (unless you have a non-compliant
-	 * hub that works without vbus) the only sensible thing is to force
-	 * peripheral mode.
-	 */
-	dr_mode = "peripheral";
-};
-
-&usb_2_hsphy {
-	status = "okay";
-
-	vdd-supply = <&vdda_usb2_ss_core>;
-	vdda-pll-supply = <&vdda_qusb_hs0_1p8>;
-	vdda-phy-dpdm-supply = <&vdda_qusb_hs0_3p1>;
-
-	qcom,imp-res-offset-value = <8>;
-	qcom,hstx-trim-value = <QUSB2_V2_HSTX_TRIM_22_8_MA>;
-};
-
-&usb_2_qmpphy {
-	status = "okay";
-
-	vdda-phy-supply = <&vdda_usb2_ss_1p2>;
-	vdda-pll-supply = <&vdda_usb2_ss_core>;
-};
-
 &wifi {
 	status = "okay";
 	vdd-0.8-cx-mx-supply = <&vreg_l5a_0p8>;
@@ -481,69 +459,7 @@
 
 /* PINCTRL - additions to nodes defined in sdm845.dtsi */
 
-&qup_i2c10_default {
-	pinconf {
-		pins = "gpio55", "gpio56";
-		drive-strength = <2>;
-		bias-disable;
-	};
-};
-
-&qup_uart9_default {
-	pinconf-tx {
-		pins = "gpio4";
-		drive-strength = <2>;
-		bias-disable;
-	};
-
-	pinconf-rx {
-		pins = "gpio5";
-		drive-strength = <2>;
-		bias-pull-up;
-	};
-};
-
 &tlmm {
 	gpio-reserved-ranges = <0 4>, <81 4>;
 
-	sdc2_clk: sdc2-clk {
-		pinconf {
-			pins = "sdc2_clk";
-			bias-disable;
-
-			/*
-			 * It seems that mmc_test reports errors if drive
-			 * strength is not 16 on clk, cmd, and data pins.
-			 */
-			drive-strength = <16>;
-		};
-	};
-
-	sdc2_cmd: sdc2-cmd {
-		pinconf {
-			pins = "sdc2_cmd";
-			bias-pull-up;
-			drive-strength = <16>;
-		};
-	};
-
-	sdc2_data: sdc2-data {
-		pinconf {
-			pins = "sdc2_data";
-			bias-pull-up;
-			drive-strength = <16>;
-		};
-	};
-
-	sd_card_det_n: sd-card-det-n {
-		pinmux {
-			pins = "gpio126";
-			function = "gpio";
-		};
-
-		pinconf {
-			pins = "gpio126";
-			bias-pull-up;
-		};
-	};
 };
