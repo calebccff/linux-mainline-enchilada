@@ -26,6 +26,8 @@
 
         stdout-path = "display0";
 
+		bootargs = "earlycon clk_ignore_unused";
+
         /*
          * hack: Use framebuffer setup by the bootloader for simplefb.
          * the address is taken from the bootloader config (strings xbl.img | grep "Display Reserved")
@@ -242,7 +244,7 @@
 
 		vreg_l14a_1p88: ldo14 {
 			regulator-min-microvolt = <1800000>;
-			regulator-max-microvolt = <1800000>;
+			regulator-max-microvolt = <1880000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
