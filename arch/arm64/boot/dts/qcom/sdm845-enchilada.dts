@@ -14,8 +14,6 @@
 / {
 	model = "OnePlus 6";
 	compatible = "qcom,sdm845-mtp", "qcom,sdm845", "qcom,mtp";
-	qcom,msm-id = <321 0x20001>;
-	qcom,board-id = <8 0 17819 22>;
 
 	aliases {
         display0 = &framebuffer0;
@@ -52,7 +50,7 @@
         fb_mem: memory@a1a10000 {
             compatible = "removed-dma-pool";
             no-map;
-            reg = <0 0x9d400000 0 (1080 * 1920 * 4)>;
+            reg = <0 0x9d400000 0 (1080 * 2280 * 4)>;
         };
     };
 
