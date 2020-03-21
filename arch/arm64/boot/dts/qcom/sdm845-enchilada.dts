@@ -400,6 +400,18 @@
 	};
 };
 
+&mdss {
+	status = "disabled";
+};
+
+&dsi0 {
+	status = "disabled";
+};
+
+&dsi1 {
+	status = "disabled";
+};
+
 &uart9 {
 	status = "okay";
 };
