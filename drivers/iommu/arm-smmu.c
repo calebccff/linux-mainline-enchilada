@@ -58,6 +58,16 @@
 #define MSI_IOVA_BASE			0x8000000
 #define MSI_IOVA_LENGTH			0x100000
 
+/* bootloader register handoff needs these */
+/* https://github.com/LineageOS/android_kernel_google_crosshatch/commit/da68882a20ae0127f2fa440f4a8485a4f9c06b35 */
+#define SMR_MASK_SHIFT          16
+#define SMR_MASK_MASK			0x7FFF
+#define S2CR_TYPE_SHIFT			16
+#define S2CR_TYPE_MASK			0x3
+#define S2CR_PRIVCFG_SHIFT		24
+#define S2CR_PRIVCFG_MASK		0x3
+#define SMR_VALID			(1 << 31)
+
 static int force_stage;
 module_param(force_stage, int, S_IRUGO);
 MODULE_PARM_DESC(force_stage,
@@ -74,10 +84,12 @@ struct arm_smmu_s2cr {
 	enum arm_smmu_s2cr_type		type;
 	enum arm_smmu_s2cr_privcfg	privcfg;
 	u8				cbndx;
+	bool            cb_handoff;
 };
 
-#define s2cr_init_val (struct arm_smmu_s2cr){				\
+#define s2cr_init_val (struct arm_smmu_s2cr){				        \
 	.type = disable_bypass ? S2CR_TYPE_FAULT : S2CR_TYPE_BYPASS,	\
+	.cb_handoff = false, 	                                        \
 }
 
 struct arm_smmu_smr {
@@ -120,6 +132,10 @@ static inline void arm_smmu_rpm_put(struct arm_smmu_device *smmu)
 	if (pm_runtime_enabled(smmu->dev))
 		pm_runtime_put_autosuspend(smmu->dev);
 }
+
+static int arm_smmu_alloc_cb(struct iommu_domain *domain,
+				struct arm_smmu_device *smmu,
+				struct device *dev);
 
 static struct arm_smmu_domain *to_smmu_domain(struct iommu_domain *dom)
 {
@@ -780,8 +796,7 @@ static int arm_smmu_init_domain_context(struct iommu_domain *domain,
 		ret = -EINVAL;
 		goto out_unlock;
 	}
-	ret = __arm_smmu_alloc_bitmap(smmu->context_map, start,
-				      smmu->num_context_banks);
+	arm_smmu_alloc_cb(domain, smmu, smmu->dev);
 	if (ret < 0)
 		goto out_unlock;
 
@@ -1717,6 +1732,98 @@ static int arm_smmu_id_size_to_bits(int size)
 	}
 }
 
+/*
+ * Some context banks needs to be transferred from bootloader to HLOS in a way
+ * that allows ongoing traffic. The current expectation is that these context
+ * banks operate in bypass mode.
+ * Additionally, there must be exactly one device in devicetree with stream-ids
+ * overlapping those used by the bootloader.
+ */
+static int arm_smmu_alloc_cb(struct iommu_domain *domain,
+				struct arm_smmu_device *smmu,
+				struct device *dev)
+{
+	struct iommu_fwspec *fwspec = dev->iommu_fwspec;
+	struct arm_smmu_domain *smmu_domain = to_smmu_domain(domain);
+	u32 i, idx;
+	int cb = -EINVAL;
+
+	/*
+	 * Dynamic domains have already set cbndx through domain attribute.
+	 * Verify that they picked a valid value.
+	 */
+	cb = smmu_domain->cfg.cbndx;
+	if (cb < smmu->num_context_banks)
+		return cb;
+	else
+		return -EINVAL;
+
+	mutex_lock(&smmu->stream_map_mutex);
+	for_each_cfg_sme(fwspec, i, idx) {
+		if (smmu->s2crs[idx].cb_handoff)
+			cb = smmu->s2crs[idx].cbndx;
+	}
+
+	if (cb < 0) {
+		mutex_unlock(&smmu->stream_map_mutex);
+		return __arm_smmu_alloc_bitmap(smmu->context_map,
+						smmu->num_s2_context_banks,
+						smmu->num_context_banks);
+	}
+
+	for (i = 0; i < smmu->num_mapping_groups; i++) {
+		if (smmu->s2crs[i].cb_handoff && smmu->s2crs[i].cbndx == cb) {
+			smmu->s2crs[i].cb_handoff = false;
+			smmu->s2crs[i].count -= 1;
+		}
+	}
+	mutex_unlock(&smmu->stream_map_mutex);
+
+	return cb;
+}
+
+static int arm_smmu_handoff_cbs(struct arm_smmu_device *smmu)
+{
+	u32 i, raw_smr, raw_s2cr;
+	struct arm_smmu_smr smr;
+	struct arm_smmu_s2cr s2cr;
+
+	for (i = 0; i < smmu->num_mapping_groups; i++) {
+		raw_smr = readl_relaxed(((smmu)->base) +
+					ARM_SMMU_GR0_SMR(i));
+		if (!(raw_smr & SMR_VALID))
+			continue;
+
+		smr.mask = (raw_smr >> SMR_MASK_SHIFT) & SMR_MASK_MASK;
+		smr.id = (u16)raw_smr;
+		smr.valid = true;
+
+		raw_s2cr = readl_relaxed(((smmu)->base) +
+					ARM_SMMU_GR0_S2CR(i));
+		memset(&s2cr, 0, sizeof(s2cr));
+		s2cr.group = NULL;
+		s2cr.count = 1;
+		s2cr.type = (raw_s2cr >> S2CR_TYPE_SHIFT) & S2CR_TYPE_MASK;
+		s2cr.privcfg = (raw_s2cr >> S2CR_PRIVCFG_SHIFT) &
+				S2CR_PRIVCFG_MASK;
+		s2cr.cbndx = (u8)raw_s2cr;
+		s2cr.cb_handoff = true;
+
+		if (s2cr.type != S2CR_TYPE_TRANS)
+			continue;
+
+		smmu->smrs[i] = smr;
+		smmu->s2crs[i] = s2cr;
+		bitmap_set(smmu->context_map, s2cr.cbndx, 1);
+		dev_dbg(smmu->dev, "Handoff smr: %x s2cr: %x cb: %d\n",
+			raw_smr, raw_s2cr, s2cr.cbndx);
+	}
+
+	return 0;
+}
+
+
+
 static int arm_smmu_device_cfg_probe(struct arm_smmu_device *smmu)
 {
 	unsigned int size;
@@ -2172,6 +2279,10 @@ static int arm_smmu_device_probe(struct platform_device *pdev)
 		return err;
 
 	err = arm_smmu_device_cfg_probe(smmu);
+	if (err)
+		return err;
+	
+	err = arm_smmu_handoff_cbs(smmu);
 	if (err)
 		return err;
 
