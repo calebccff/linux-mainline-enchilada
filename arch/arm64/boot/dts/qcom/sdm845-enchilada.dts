@@ -41,8 +41,8 @@
             format = "a8r8g8b8";
             status = "okay";
 
-			vddi-supply = <&vreg_l14a_1p88>;
-			vci-supply = <&vreg_l28a_3p0>;
+			 vddi-supply = <&vreg_l14a_1p88>;
+			 vci-supply = <&vreg_l28a_3p0>;
         };
     };
 
@@ -572,6 +572,24 @@
 
 	vdda-phy-supply = <&vdda_usb1_ss_1p2>;
 	vdda-pll-supply = <&vdda_usb1_ss_core>;
+};
+
+&usb_2 {
+	status = "disabled";
+};
+
+&usb_2_dwc3 {
+	status = "disabled";
+	/* Until we have Type C hooked up we'll force this as peripheral. */
+	dr_mode = "peripheral";
+};
+
+&usb_2_hsphy {
+	status = "disabled";
+};
+
+&usb_2_qmpphy {
+	status = "disabled";
 };
 
 &wifi {
