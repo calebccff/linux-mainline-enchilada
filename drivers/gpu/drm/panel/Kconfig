@@ -278,10 +278,8 @@ config DRM_PANEL_SAMSUNG_S6E63M0
 config DRM_PANEL_SAMSUNG_SOFEF00
 	tristate "Samsung SOFEF00 DSI command mode panel"
 	depends on OF
-	depends on DRM_MIPI_DSI
 	depends on SPI
 	depends on BACKLIGHT_CLASS_DEVICE
-	select VIDEOMODE_HELPERS
 
 config DRM_PANEL_SAMSUNG_S6E8AA0
 	tristate "Samsung S6E8AA0 DSI video mode panel"
