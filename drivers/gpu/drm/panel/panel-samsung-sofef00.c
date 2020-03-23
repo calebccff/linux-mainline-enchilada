@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (c) 2020 FIXME
+// Copyright (c) 2020 Caleb Connolly
 // Generated with linux-mdss-dsi-panel-driver-generator from vendor device tree:
-//   Copyright (c) 2013, The Linux Foundation. All rights reserved. (FIXME)
+//   Copyright (c) 2013, The Linux Foundation. All rights reserved. (Caleb Connolly)
 
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
@@ -251,7 +251,6 @@ static int samsung_sofef00_m_remove(struct mipi_dsi_device *dsi)
 static const struct of_device_id samsung_sofef00_m_of_match[] = {
 	{ 
 		.compatible = "samsung,sofef00",
-		.data = &samsung_sofef00_m;
 	 },
 	{ /* sentinel */ }
 };
