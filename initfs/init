@@ -1,0 +1,24 @@
+#!/bin/sh
+
+. ./init_functions.sh
+
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+
+mount_proc_sys_dev
+setup_log
+
+setup_mdev
+
+setup_usb_network
+start_udhcpd
+start_telnetd
+
+# OnePlus 5: Run some hacked-in functions for debugging while we still have no USB!
+mount_userdata_partition
+echo "Waiting for 5 seconds before dumping logs..." > /dev/kmsg
+sleep 5
+copy_logs_to_userdata
+sync && echo "It's safe to reboot your phone now :)" > /dev/kmsg
+
+# wait so init doesn't die xd
+while true; do sleep 300; done
