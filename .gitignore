@@ -61,8 +61,8 @@ modules.order
 /Module.markers
 /modules.builtin.modinfo
 /modules.nsdeps
-initfs/
-
+/initfs/
+/initfs/*
 #
 # RPM spec file (make rpm-pkg)
 #

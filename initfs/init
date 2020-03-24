@@ -18,7 +18,7 @@ mount_userdata_partition
 echo "Waiting for 5 seconds before dumping logs..." > /dev/kmsg
 sleep 5
 copy_logs_to_userdata
-sync && echo "It's safe to reboot your phone now :)" > /dev/kmsg
-
+sync && echo "Rebooting)" > /dev/kmsg
+reboot
 # wait so init doesn't die xd
-while true; do sleep 300; done
+#while true; do sleep 300; done
