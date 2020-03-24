@@ -16,7 +16,7 @@
 	compatible = "qcom,sdm845-mtp", "qcom,sdm845", "qcom,mtp";
 
 	aliases {
-        display0 = &framebuffer0;
+        //display0 = &framebuffer0;
     };
 
     chosen {
@@ -24,7 +24,7 @@
         #size-cells = <2>;
         ranges;
 
-        stdout-path = "display0";
+        stdout-path = "tty1";
 
 		bootargs = "earlycon clk_ignore_unused arm-smmu=off";
 
@@ -32,7 +32,7 @@
          * hack: Use framebuffer setup by the bootloader for simplefb.
          * the address is taken from the bootloader config (strings xbl.img | grep "Display Reserved")
          */
-        framebuffer0: framebuffer@9d400000 {
+		framebuffer0: framebuffer@9d400000 {
             compatible = "simple-framebuffer";
             reg = <0 0x9d400000 0 (1080 * 2280 * 4)>;
             width = <1080>;
@@ -41,8 +41,10 @@
             format = "a8r8g8b8";
             status = "okay";
 
-			 vddi-supply = <&vreg_l14a_1p88>;
-			 vci-supply = <&vreg_l28a_3p0>;
+			vdda-supply = <&vreg_l14a_1p88>;
+			vddio-supply = <&vreg_l14a_1p88>;
+			vddi-supply = <&vreg_l14a_1p88>;
+			vci-supply = <&vreg_l28a_3p0>;
         };
     };
 
@@ -403,11 +405,7 @@
 		firmware-name = "qcom/sdm845/a630_zap.mbn";
 	};
 };*/
-
-&mdss {
-	status = "disabled";
-};
-
+/*
 &dsi0 {
 	status = "okay";
 	qcom,dual-dsi-mode;
@@ -421,6 +419,8 @@
 		reg = <0>;
 
 		vdda-supply = <&vreg_l14a_1p88>;
+		vddi-supply = <&vreg_l14a_1p88>;
+		vci-supply = <&vreg_l28a_3p0>;
 		// vdispp-supply = <&lab_regulator>;
 		// vdispn-supply = <&ibb_regulator>;
 
@@ -486,6 +486,7 @@
 	status = "okay";
 	vdds-supply = <&vdda_mipi_dsi1_pll>;
 };
+*/
 
 &mdss {
 	status = "okay";
@@ -496,7 +497,7 @@
 };
 
 /* PINCTRL - board-specific pinctrl */
-
+/*
 &tlmm {
 	disp_mode_sel: disp-mode-sel {
 		pinmux {
@@ -524,7 +525,11 @@
 		};
 	};
 };
+*/
 
+&dispcc {
+	status = "disabled";
+};
 &uart9 {
 	status = "okay";
 };
@@ -552,6 +557,8 @@
 &usb_1_dwc3 {
 	/* Until we have Type C hooked up we'll force this as peripheral. */
 	dr_mode = "peripheral";
+	phys = <&usb_1_hsphy>;
+	phy-names = "usb2-phy";
 };
 
 &usb_1_hsphy {
