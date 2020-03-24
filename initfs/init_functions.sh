@@ -110,9 +110,11 @@ copy_logs_to_userdata() {
 	log "ifconfig -a" "ifconfig"
 	log "lsusb -tv" "lsusb"
 	log "i2cdetect -l" "i2cdetect"
-	log "lsmod" "lsmod"
+	#log "lsmod" "lsmod"
 	log "cat /proc/cmdline" "cmdline"
-	log "ls /dev" "ls"
+	#log "ls /dev" "ls"
+	log "dmesg | grep ufs" "ufs"
+	log "uname -a" "uname"
 
 	#log "lspci -vvv" "lspci"
 	#log "modprobe dwc3" "modprobe"
