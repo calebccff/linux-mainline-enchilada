@@ -1366,6 +1366,23 @@ static int __ref kernel_init(void *unused)
 	numa_default_policy();
 
 	rcu_end_inkernel_boot();
+	// emergency_restart();
+	// while(1) {
+		
+	// }
+
+	// void* alt_ramoops = ioremap(0xAC500000ULL, 0x200000);
+	// memset(alt_ramoops, 'A', 0x200000);
+	// // copy the dmesg into the ram region
+	// // without compression or encryption.
+	// // will be visible in Pixel 3 downstream /dev/access-ramoops.
+	// // (yeah this isn't how you're supposed to use pstore, but I really want to get the log, ok?)
+	// memcpy(alt_ramoops, log_buf_addr_get(), min(log_buf_len_get(), 0x200000));
+	// void* ramoops = ioremap(0xAC500000ULL, 0x200000);
+	// memset(ramoops, 'B', 0x400000);
+	// void* metadata = ioremap(0xAC300000ULL, 0x1000);
+	// memset(metadata, 'C', 0x1000);
+	// emergency_restart();
 
 	if (ramdisk_execute_command) {
 		ret = run_init_process(ramdisk_execute_command);

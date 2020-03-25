@@ -62,7 +62,7 @@ setup_usb_network() {
 	ln -s $CONFIGFS/g1/functions/ncm.usb0 $CONFIGFS/g1/configs/c.1 || echo "  Couldn't symlink ncm.usb0"
 
 	echo "Calling the usb controller"
-	echo "a800000.dwc3" > "$CONFIGFS/g1/UDC"
+	echo "a600000.dwc3" > "$CONFIGFS/g1/UDC"
 }
 
 start_udhcpd() {
